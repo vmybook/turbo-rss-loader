@@ -57,7 +57,7 @@ class YandexTurboModule extends Module implements BootstrapInterface
         parent::init();
 
         if (Yii::$app instanceof \yii\console\Application) {
-            $this->controllerNamespace = 'app\modules\yandexturbo\commands';
+            $this->controllerNamespace = 'vmybook\turbopages\commands';
         }
 
         if (is_string($this->cacheProviderName)) {
@@ -78,13 +78,6 @@ class YandexTurboModule extends Module implements BootstrapInterface
 
         if (empty($this->language)) {
             $this->language = Yii::$app->language;
-        }
-    }
-
-    public function bootstrap($app)
-    {
-        if ($app instanceof \yii\console\Application) {
-        	$this->controllerNamespace = 'vmybook\turbopages\commands';
         }
     }
 }
