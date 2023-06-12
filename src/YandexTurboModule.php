@@ -3,13 +3,16 @@
 namespace vmybook\turbopages;
 
 use Yii;
+use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
 use yii\base\Module;
 use yii\caching\Cache;
 use Throwable;
 
-class YandexTurboModule extends Module
+class YandexTurboModule extends Module implements BootstrapInterface
 {
+    public $controllerNamespace = 'vmybook\turbopages\controllers';
+
     public $cacheExpire = 3600;
     public $cacheProviderName = 'cache';
     public $cacheProvider = null;
@@ -52,6 +55,7 @@ class YandexTurboModule extends Module
     public function init(): void
     {
         parent::init();
+
         if (Yii::$app instanceof \yii\console\Application) {
             $this->controllerNamespace = 'app\modules\yandexturbo\commands';
         }
@@ -74,6 +78,13 @@ class YandexTurboModule extends Module
 
         if (empty($this->language)) {
             $this->language = Yii::$app->language;
+        }
+    }
+
+    public function bootstrap($app)
+    {
+        if ($app instanceof \yii\console\Application) {
+        	$this->controllerNamespace = 'vmybook\turbopages\commands';
         }
     }
 }
