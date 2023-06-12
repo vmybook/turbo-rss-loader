@@ -3,13 +3,12 @@
 namespace vmybook\turbopages;
 
 use Yii;
-use yii\base\BootstrapInterface;
 use yii\base\InvalidConfigException;
 use yii\base\Module;
 use yii\caching\Cache;
 use Throwable;
 
-class YandexTurboModule extends Module implements BootstrapInterface
+class YandexTurboModule extends Module
 {
     public $controllerNamespace = 'vmybook\turbopages\controllers';
 
