@@ -129,6 +129,7 @@ class YandexTurboApi
             ->setMethod('POST')
             ->addHeaders([
                 'content-type' => 'application/rss+xml',
+                'content-encoding' => 'gzip',
             ])->setContent(file_get_contents($dirFile))->send();
 
         if ($this->response->getIsOk()) {

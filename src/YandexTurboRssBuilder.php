@@ -54,8 +54,7 @@ class YandexTurboRssBuilder
         
         if($fileSaved) {
             Yii::$app->queue->push(new SendToApiJob([
-                'file' => $fileName,
-                //'file' => self::packFile($fileName),
+                'file' => self::packFile($fileName),
             ]));
         }
     }
