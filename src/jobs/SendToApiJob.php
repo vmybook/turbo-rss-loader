@@ -15,7 +15,7 @@ class SendToApiJob extends BaseObject implements JobInterface
 
     public function execute($queue)
     {
-        $module = \Yii::$app->getModule('yandexturbo');
+        $module = \Yii::$app->getModule('turbopages');
         $turbo = new YandexTurboApi($module->token, $module->host, $module->isDebug);
         
         try {
