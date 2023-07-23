@@ -14,7 +14,7 @@ class YandexTurboRssBuilder
 {
     const BATCH_MAX_SIZE = 100;
 
-    public static function buildRssFeed(): void
+    public static function buildRssFeed($offset): void
     {
         $module = YandexTurboModule::getInstance();
 
@@ -28,7 +28,7 @@ class YandexTurboRssBuilder
         $dirForFiles = self::getDirForFiles();
 
         for($i = 0; $i < $maxFile; $i++){
-            $offset = $maxItemsInFile * $i;
+            $offset = $offset + $maxItemsInFile * $i;
             $fileName = $dirForFiles . 'rss_yandexturbo_' . ($i + 1) . '.xml';
             $feedQuery = $feed::getItems($offset, $maxItemsInFile);
 

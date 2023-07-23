@@ -11,12 +11,12 @@ use Throwable;
 
 class FeedController extends Controller
 {
-    public function actionCreate()
+    public function actionCreate($offset = 0)
     {
         $time1 = time();
         $this->log('Start building feed');
         
-        YandexTurboRssBuilder::buildRssFeed();
+        YandexTurboRssBuilder::buildRssFeed($offset);
         
         $this->log('End building feed');
         
