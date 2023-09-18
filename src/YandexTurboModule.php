@@ -55,7 +55,7 @@ class YandexTurboModule extends Module
     {
         parent::init();
         if (Yii::$app instanceof \yii\console\Application) {
-            $this->controllerNamespace = 'app\modules\yandexturbo\commands';
+            $this->controllerNamespace = 'vmybook\turbopages\commands';
         }
 
         if (is_string($this->cacheProviderName)) {
