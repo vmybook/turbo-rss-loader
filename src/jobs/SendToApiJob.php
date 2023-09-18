@@ -6,7 +6,8 @@ use Yii;
 use yii\base\BaseObject;
 use \yii\queue\JobInterface;
 use vmybook\turbopages\YandexTurboApi;
-use vmybook\turbopages\YandexTurboModule;
+use vmybook\turbopages\constants\DbTables;
+use vmybook\turbopages\constants\TaskStatus;
 use Throwable;
 
 class SendToApiJob extends BaseObject implements JobInterface
@@ -29,6 +30,7 @@ class SendToApiJob extends BaseObject implements JobInterface
             $taskId = $turbo->uploadFile($dataUpload['upload_address'], $this->file);
 
             Yii::info('Send file: ' . $this->file . ' with taskId: ' . $taskId['task_id'], 'queue');
+            $this->logTask($taskId['task_id'] ?? 'not_found');
 
             // we can send 1 task per second
             sleep(2);
@@ -36,5 +38,17 @@ class SendToApiJob extends BaseObject implements JobInterface
             Yii::error('Error with file: ' . $this->file . ' Error: ' . $e->getMessage(), 'queue');
             sleep(2);
         }
+    }
+
+    private function logTask(string $taskId = '')
+    {
+        $taskData = [
+            'task_yid' => $taskId,
+            'status' => TaskStatus::STATUS_LOADING,
+            'created_at' => time(),
+            'updated_at' => time(),
+        ];
+
+        Yii::$app->db->createCommand()->insert(DbTables::PAGE_LOG_TABLE, $taskData)->execute();
     }
 }

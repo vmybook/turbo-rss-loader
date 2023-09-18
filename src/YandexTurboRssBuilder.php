@@ -9,26 +9,40 @@ use Throwable;
 use yii\db\Query;
 use vmybook\turbopages\jobs\SendToApiJob;
 use vmybook\turbopages\exceptions\BookFileNotFoundException;
+use vmybook\turbopages\constants\PageStatus;
+use vmybook\turbopages\commands\services\SettingsService;
+use vmybook\turbopages\constants\DbTables;
+use yii\db\Expression;
 
 class YandexTurboRssBuilder
 {
     const BATCH_MAX_SIZE = 100;
+    
+    private static $settingsService;
 
-    public static function buildRssFeed($offset): void
+    private static function getSettingsService(): SettingsService
+    {
+        if(!isset(self::$settingsService)) {
+            self::$settingsService = new SettingsService();
+        }
+
+        return self::$settingsService;
+    }
+
+    public static function buildRssFeed($offset = 0): void
     {
         $module = YandexTurboModule::getInstance();
 
         // Max limits according to Yandex turbo API: 10 files and 10 000 items 
-        $maxFile = $module->maxFile ?? 1;
-        $maxItemsInFile = $module->maxItemsInFile ?? 10;
+        $maxFile = $module->maxFile;
+        $maxItemsInFile = $module->maxItemsInFile;
 
         $feed = $module->feed;
-        $feed::clearLogTable();
-
         $dirForFiles = self::getDirForFiles();
 
         for($i = 0; $i < $maxFile; $i++){
-            $offset = $offset + $maxItemsInFile * $i;
+            $offset = $i * $maxItemsInFile;
+
             $fileName = $dirForFiles . 'rss_yandexturbo_' . ($i + 1) . '.xml';
             $feedQuery = $feed::getItems($offset, $maxItemsInFile);
 
@@ -37,26 +51,13 @@ class YandexTurboRssBuilder
                 Yii::$app->queue->push(new SendToApiJob([
                     'file' => self::packFile($fileName),
                 ]));
+
+                $newOffset = $maxItemsInFile * ($i + 1);
+                self::getSettingsService()->setValue('offset', $newOffset);
             }
         }
-    }
 
-    public static function buildRssFeedToDel(): void
-    {
-        $module = YandexTurboModule::getInstance();
-        $feed = $module->feed; 
-        
-        $dirForFiles = self::getDirForFiles();
-        $fileName = $dirForFiles . 'rss_yandexturbo_toDel.xml';
-        
-        $feedQuery = $feed::getItemsToDel();
-        $fileSaved = self::createXmlFile($feedQuery, $fileName, true);
-        
-        if($fileSaved) {
-            Yii::$app->queue->push(new SendToApiJob([
-                'file' => self::packFile($fileName),
-            ]));
-        }
+        self::getSettingsService()->setValue('launchTime', time());
     }
 
     private static function getDirForFiles(): string
@@ -161,9 +162,7 @@ class YandexTurboRssBuilder
 
                 ++$i;
 
-                if($toDel !== true){
-                    $item->logPageIntoDb();
-                }
+                self::logPage($item);
             }
 
             if($i > 0) {
@@ -180,5 +179,33 @@ class YandexTurboRssBuilder
         }
 
         return (bool)$result;
+    }
+
+    private static function logPage(FeedItemInterface $item)
+    {
+        $page = Yii::$app->db->createCommand('SELECT * FROM '. DbTables::PAGE_LOG_TABLE .' WHERE book_id=:book_id')
+            ->bindValues(['book_id' => $item->getId()])
+            ->queryOne();
+
+        $pageData = [
+            'book_id' => $item->getId(),
+            'link' => $item->getLink(),
+            'status' => PageStatus::STATUS_LOADING,
+        ];
+
+        if($page === false) {
+            $pageData['load_count'] = 1;
+            $pageData['created_at'] = time();
+            $pageData['updated_at'] = time();
+
+            Yii::$app->db->createCommand()->insert(DbTables::PAGE_LOG_TABLE, $pageData)->execute();
+        } else {
+            $pageData['load_count'] = new Expression("load_count + 1");
+            $pageData['updated_at'] = time();
+
+            Yii::$app->db->createCommand()->update(DbTables::PAGE_LOG_TABLE , $pageData, 'book_id=:book_id')
+                ->bindValues(['book_id' => $item->getId()])    
+                ->execute();
+        }
     }
 }

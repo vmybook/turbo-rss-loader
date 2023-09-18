@@ -3,6 +3,9 @@
 namespace vmybook\turbopages\commands;
 
 use Yii;
+use vmybook\turbopages\commands\services\FeedLoadService;
+use vmybook\turbopages\commands\services\SettingsService;
+use vmybook\turbopages\commands\services\StatusUpdaterService;
 use vmybook\turbopages\YandexTurboRssBuilder;
 use vmybook\turbopages\YandexTurboApi;
 use vmybook\turbopages\YandexTurboModule;
@@ -11,12 +14,42 @@ use Throwable;
 
 class FeedController extends Controller
 {
-    public function actionCreate($offset = 0)
+    private $feedLoadService;
+    private $settingsService;
+
+    private function getFeedLoadService(): FeedLoadService
+    {
+        if(!isset($this->feedLoadService)) {
+            $this->feedLoadService = new FeedLoadService;
+        }
+
+        return $this->feedLoadService;
+    }
+
+    private function getSettingsService(): SettingsService
+    {
+        if(!isset($this->settingsService)) {
+            $this->settingsService = new SettingsService();
+        }
+
+        return $this->settingsService;
+    }
+
+    public function actionCreate()
     {
         $time1 = time();
-        $this->log('Start building feed');
+
+        $isJobsStillRunning = !$this->getFeedLoadService()->checkJobsCanRun();
+        if($isJobsStillRunning === true) {
+            $this->log('Jobs cant be running');    
+            exit;
+        }
         
-        YandexTurboRssBuilder::buildRssFeed($offset);
+        $this->log('Start building feed');
+
+        // Known issue: when tasks are queued but not yet processed and a command [Create] is run, the tasks will not be executed and will be overwritten
+        $offset = $this->getSettingsService()->getValue('offset');
+        YandexTurboRssBuilder::buildRssFeed($offset); 
         
         $this->log('End building feed');
         
@@ -24,21 +57,12 @@ class FeedController extends Controller
         $this->log("TOTAL time " . ($time2 - $time1) . ' sec');
     }
 
-    public function actionDelete()
+    public function actionStatus($taskId = '')
     {
-        $time1 = time();
-        $this->log('Start building to del feed');
-        
-        YandexTurboRssBuilder::buildRssFeedToDel();
-        
-        $this->log('End building to del feed');
-        
-        $time2 = time();
-        $this->log("TOTAL time " . ($time2 - $time1) . ' sec');
-    }
+        if(empty($taskId)) {
+            $this->log('Task ID must to be set');
+        }
 
-    public function actionStatus($taskId = '3deb4410-fef3-11ed-8af8-4744ebb33324')
-    {
         $module = YandexTurboModule::getInstance();
         $turbo = new YandexTurboApi($module->token, $module->host, $module->isDebug);
         
@@ -65,6 +89,19 @@ class FeedController extends Controller
             var_dump($status);
         } catch(Throwable $e) {
             var_dump($e->getMessage());
+        }
+    }
+
+    public function updatePageStatus()
+    {
+        // get tasks from task table  where status is 0
+        $updater = new StatusUpdaterService();
+        $tasksInProgress = $updater->getTasksInProgress();
+        
+        // send status request to the Ya || if still processing exit
+        foreach($tasksInProgress as $taskYaId) {
+            $result = $updater->updatePageStatus($taskYaId);
+            $updater->updateTaskStatus($taskYaId, $result);
         }
     }
 

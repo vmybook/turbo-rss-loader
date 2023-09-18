@@ -10,8 +10,6 @@ use Throwable;
 
 class YandexTurboModule extends Module
 {
-    public $controllerNamespace = 'vmybook\turbopages\controllers';
-
     public $cacheExpire = 3600;
     public $cacheProviderName = 'cache';
     public $cacheProvider = null;
@@ -23,6 +21,8 @@ class YandexTurboModule extends Module
 
     public $maxFile = 1;
     public $maxItemsInFile = 10;
+    public $allowedTimeIntervalInHours = 1;
+    public $totalPageCount = 100000;
 
     /** FeedItemInterface */
     public $feed;
@@ -54,9 +54,8 @@ class YandexTurboModule extends Module
     public function init(): void
     {
         parent::init();
-
         if (Yii::$app instanceof \yii\console\Application) {
-            $this->controllerNamespace = 'vmybook\turbopages\commands';
+            $this->controllerNamespace = 'app\modules\yandexturbo\commands';
         }
 
         if (is_string($this->cacheProviderName)) {
