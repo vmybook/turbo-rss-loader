@@ -49,6 +49,6 @@ class SendToApiJob extends BaseObject implements JobInterface
             'updated_at' => time(),
         ];
 
-        Yii::$app->db->createCommand()->insert(DbTables::PAGE_LOG_TABLE, $taskData)->execute();
+        Yii::$app->db->createCommand()->insert(DbTables::TASK_LOG_TABLE, $taskData)->execute();
     }
 }
