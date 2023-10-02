@@ -67,24 +67,23 @@ class StatusUpdaterService
             }
 
             $loadedPages = $statusData['turbo_pages'] ?? [];
-            foreach($loadedPages as $page) {
-                $page = Yii::$app->db->createCommand('SELECT * FROM '. DbTables::PAGE_LOG_TABLE .' WHERE ya_link=:ya_link')
-                    ->bindValues(['ya_link' => $page['link']])
+            foreach($loadedPages as $key => $page) {
+                $pageFromDb = Yii::$app->db->createCommand('SELECT * FROM '. DbTables::PAGE_LOG_TABLE .' WHERE link=:link')
+                    ->bindValue(':link', $page['link'])
                     ->queryOne();
 
-                if($page !== false) {
+                if($pageFromDb !== false) {
                     $pageData = [
                         'ya_link' => $page['preview'] ?? '',
                         'load_count' => new Expression("load_count + 1"),
                         'status' => PageStatus::STATUS_SUCCESS,
                         'updated_at' => time(),
-                    
+
                     ];
-        
-                    Yii::$app->db->createCommand()->update(DbTables::PAGE_LOG_TABLE , $pageData, 'ya_link=:ya_link')
-                        ->bindValues(['ya_link' => $page['link']]) 
+                    Yii::$app->db->createCommand()->update(DbTables::PAGE_LOG_TABLE , $pageData, 'link=:link')
+                        ->bindValues(['link' => $page['link']]) 
                         ->execute();
-                }
+                } 
             }
 
             // blocking protection
@@ -105,7 +104,7 @@ class StatusUpdaterService
                 'updated_at' => time(),
             ];
             
-            Yii::$app->db->createCommand()->update(DbTables::PAGE_LOG_TABLE , $taskData, 'task_yid=:task_yid')
+            Yii::$app->db->createCommand()->update(DbTables::TASK_LOG_TABLE , $taskData, 'task_yid=:task_yid')
                 ->bindValues(['task_yid' => $taskYaId]) 
                 ->execute();
         } catch(Throwable $e) {
