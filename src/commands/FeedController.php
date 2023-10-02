@@ -92,7 +92,7 @@ class FeedController extends Controller
         }
     }
 
-    public function updatePageStatus()
+    public function actionUpdatePageStatus()
     {
         // get tasks from task table  where status is 0
         $updater = new StatusUpdaterService();
