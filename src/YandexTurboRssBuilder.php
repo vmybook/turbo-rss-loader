@@ -29,7 +29,7 @@ class YandexTurboRssBuilder
         return self::$settingsService;
     }
 
-    public static function buildRssFeed($offset = 0): void
+    public static function buildRssFeed($initOffset = 0): void
     {
         $module = YandexTurboModule::getInstance();
 
@@ -41,7 +41,7 @@ class YandexTurboRssBuilder
         $dirForFiles = self::getDirForFiles();
 
         for($i = 0; $i < $maxFile; $i++){
-            $offset = $i * $maxItemsInFile;
+            $offset = ($i * $maxItemsInFile) + $initOffset;
 
             $fileName = $dirForFiles . 'rss_yandexturbo_' . ($i + 1) . '.xml';
             $feedQuery = $feed::getItems($offset, $maxItemsInFile);
@@ -52,7 +52,7 @@ class YandexTurboRssBuilder
                     'file' => self::packFile($fileName),
                 ]));
 
-                $newOffset = $maxItemsInFile * ($i + 1);
+                $newOffset = ($maxItemsInFile * ($i + 1)) + $initOffset;
                 self::getSettingsService()->setValue('offset', $newOffset);
             }
         }
